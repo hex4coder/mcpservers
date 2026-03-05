@@ -27,6 +27,7 @@ Model Context Protocol (MCP) server implementation for deep management of Mikrot
 - `get_mikrotik_resources`: Board info, CPU load, uptime, and memory.
 - `get_mikrotik_storage`: Check internal disk usage.
 - `get_mikrotik_logs`: Get recent system logs.
+- `execute_mikrotik_command`: **Custom API Call** to run specific commands (e.g., flush cache, reboot).
 
 ## Quick Start (NixOS)
 1. `cd mikrotik-mcpserver`

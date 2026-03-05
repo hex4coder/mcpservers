@@ -14,6 +14,7 @@ Model Context Protocol (MCP) server implementation for full life cycle managemen
 ### 📦 System & Packages (Debian/Proxmox)
 - `update_proxmox_repositories(node)`: Trigger **APT Update** to refresh package lists.
 - `list_proxmox_packages(node)`: List available updates and current package status.
+- `execute_proxmox_shell_command(command)`: **Raw Shell Access** (USE WITH CAUTION) to run any CLI command on the server.
 
 ### ⚙️ Life Cycle Management
 - `list_proxmox_vms(node)`: List all VMs and LXCs.

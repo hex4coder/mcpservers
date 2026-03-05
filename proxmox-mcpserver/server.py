@@ -134,6 +134,29 @@ def list_proxmox_packages(node: str) -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
+@mcp.tool()
+def execute_proxmox_shell_command(command: str) -> str:
+    """Execute a raw shell command on the host (Debian Proxmox). 
+    USE WITH CAUTION! This runs directly on the server's OS.
+    Example: 'ip a', 'df -h', 'apt list --installed'
+    """
+    import subprocess
+    try:
+        # Run the command with shell=True for full CLI support
+        result = subprocess.run(
+            command,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        if result.returncode == 0:
+            return f"✅ Command: {command}\nOutput:\n{result.stdout}"
+        else:
+            return f"❌ Command: {command} (Return code: {result.returncode})\nError:\n{result.stderr or result.stdout}"
+    except Exception as e:
+        return f"Error: {str(e)}"
+
 # ==========================================
 # 2. VM/CONTAINER MANAGEMENT
 # ==========================================

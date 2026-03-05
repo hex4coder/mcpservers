@@ -182,6 +182,23 @@ def ping_mikrotik(address: str, count: int = 4) -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
+@mcp.tool()
+def execute_mikrotik_command(path: str, command: str, arguments: dict = None) -> str:
+    """Execute a custom command on Mikrotik via API. 
+    Example: path='/ip/dns/cache', command='flush'
+    Example: path='/system', command='reboot'
+    """
+    try:
+        connection = get_api_connection()
+        api = connection.get_api()
+        resource = api.get_resource(path)
+        args = arguments or {}
+        result = resource.call(command, args)
+        connection.disconnect()
+        return f"✅ Command '{command}' on '{path}' executed.\nResult: {result}"
+    except Exception as e:
+        return f"Error: {str(e)}"
+
 # ==========================================
 # 3. HOTSPOT SERVER MANAGEMENT
 # ==========================================
