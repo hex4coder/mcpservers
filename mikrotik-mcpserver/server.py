@@ -25,7 +25,8 @@ def get_api_connection():
         username=username,
         password=password,
         port=port,
-        use_ssl=False
+        use_ssl=False,
+        plaintext_login=True
     )
     return connection
 
