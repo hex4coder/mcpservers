@@ -166,22 +166,32 @@ def ping_mikrotik(address: str, count: int = 4) -> str:
     try:
         connection = get_api_connection()
         api = connection.get_api()
-        # In Mikrotik API, ping is often a top-level command
-        # Using get_resource('/') and calling 'ping' will execute '/ping'
+        # In Mikrotik API, ping is a top-level command.
+        # We ensure all values in the arguments dictionary are strings to avoid 'int' object errors.
         resource = api.get_resource('/')
-        results = resource.call('ping', {'address': address, 'count': str(count)})
+        results = resource.call('ping', {
+            'address': str(address),
+            'count': str(count)
+        })
         connection.disconnect()
         
         if not results:
             return f"No response from {address}."
             
         output = f"Ping results for {address} from Mikrotik:\n"
-        for r in results:
-            # Handle different field names across RouterOS versions
+        for i, r in enumerate(results):
+            # RouterOS API might return fields with different names or as integers
             time = r.get('time', r.get('avg-rtt', 'N/A'))
             size = r.get('size', r.get('packet-size', 'N/A'))
-            status = f"Size: {size} | Time: {time} | TTL: {r.get('ttl', 'N/A')}"
-            output += f"- {status}\n"
+            sent = r.get('sent', 'N/A')
+            received = r.get('received', 'N/A')
+            
+            # If it's a summary result (often the last one)
+            if 'avg-rtt' in r or 'min-rtt' in r:
+                output += f"- Summary: Sent={sent}, Received={received}, Avg RTT={r.get('avg-rtt', 'N/A')}\n"
+            else:
+                status = f"Size: {size} | Time: {time} | TTL: {r.get('ttl', 'N/A')}"
+                output += f"seq {i}: {status}\n"
         return output
     except Exception as e:
         return f"Error: {str(e)}"
