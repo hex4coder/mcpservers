@@ -4,25 +4,23 @@ Model Context Protocol (MCP) server implementation for deep management of Mikrot
 
 ## Tools Available
 
-### 🛠️ System
-- `get_system_resources`: Board info, CPU load, uptime, and memory.
-- `get_system_logs`: Get recent system logs (customizable lines).
+### 📶 Hotspot & Bandwidth Management
+- `get_hotspot_servers`: List all hotspot instances.
+- `get_hotspot_server_profiles`: View server profiles (HTML login page info).
+- `set_hotspot_html_directory`: **Change the Login Page** folder for a server profile.
+- `get_hotspot_user_profiles`: View user profiles and their **Bandwidth Limits** (rate-limit).
+- `add_hotspot_user_profile`: Create/Update user profiles with speed limits (e.g., '512k/1M').
+- `set_user_profile`: **Assign/Move a User** to a specific profile/bandwidth tier.
+- `add_hotspot_user`: Create new hotspot users.
+- `get_hotspot_active_summary`: Monitor current active sessions.
 
 ### 🌐 Network & Routing
 - `get_interfaces`: Status, type, and traffic (Rx/Tx) for all interfaces.
-- `get_ip_addresses`: All assigned IP addresses and their interfaces.
-- `get_routes`: View the routing table and active gateways.
-- `get_dns_settings`: Check current DNS configuration.
-- `get_arp_table`: IP to MAC address mappings.
+- `get_dhcp_leases_detailed`: View connected devices with hostnames and MACs.
 
-### 📶 Hotspot Management
-- `get_hotspot_active_summary`: Summary of all currently active sessions.
-- `get_hotspot_users`: List all registered hotspot users.
-- `add_hotspot_user`: Create a new user (with profile, password, and comment).
-- `remove_hotspot_user`: Delete a hotspot user.
-
-### 🔌 DHCP
-- `get_dhcp_leases_detailed`: Full list of DHCP leases including hostnames and MACs.
+### 🛠️ System
+- `get_system_resources`: Board info, CPU load, uptime, and memory.
+- `get_system_logs`: Get recent system logs.
 
 ## Quick Start (NixOS)
 1. `cd mikrotik-mcpserver`
