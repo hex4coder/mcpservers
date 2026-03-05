@@ -166,17 +166,21 @@ def ping_mikrotik(address: str, count: int = 4) -> str:
     try:
         connection = get_api_connection()
         api = connection.get_api()
-        ping_resource = api.get_resource('/ping')
-        # Mikrotik ping command returns a list of results
-        results = ping_resource.call('ping', {'address': address, 'count': str(count)})
+        # In Mikrotik API, ping is often a top-level command
+        # Using get_resource('/') and calling 'ping' will execute '/ping'
+        resource = api.get_resource('/')
+        results = resource.call('ping', {'address': address, 'count': str(count)})
         connection.disconnect()
         
+        if not results:
+            return f"No response from {address}."
+            
         output = f"Ping results for {address} from Mikrotik:\n"
         for r in results:
-            if 'time' in r:
-                status = f"Size: {r.get('size', 'N/A')} | Time: {r.get('time', 'N/A')} | TTL: {r.get('ttl', 'N/A')}"
-            else:
-                status = f"Status: {r.get('status', 'Timeout/Error')}"
+            # Handle different field names across RouterOS versions
+            time = r.get('time', r.get('avg-rtt', 'N/A'))
+            size = r.get('size', r.get('packet-size', 'N/A'))
+            status = f"Size: {size} | Time: {time} | TTL: {r.get('ttl', 'N/A')}"
             output += f"- {status}\n"
         return output
     except Exception as e:
