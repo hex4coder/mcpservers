@@ -1,4 +1,4 @@
-# Panduan Penggunaan MCP Markdown to Word di n8n
+# Panduan Penggunaan MCP Markdown to Word & PDF di n8n
 
 Dokumen ini menjelaskan cara menghubungkan server MCP Python yang telah kita buat ke dalam alur kerja (workflow) n8n di sistem NixOS.
 
@@ -21,8 +21,10 @@ Server akan berjalan di: `http://0.0.0.0:1996/md-to-word-mcpserver/sse`
     - **SSE URL**: `http://localhost:1996/md-to-word-mcpserver/sse`
     - *(Ganti `localhost` dengan IP mesin NixOS Anda jika n8n berjalan di mesin berbeda atau Docker).*
 5.  Klik **Connect/Fetch Tools**. n8n akan mendeteksi tool berikut:
-    - `convert_text_to_docx`: Mengonversi teks Markdown langsung.
-    - `convert_file_to_docx`: Mengonversi file `.md` yang ada di server.
+    - `convert_markdown_to_docx`: Mengonversi teks Markdown ke Word.
+    - `convert_markdown_to_pdf`: Mengonversi teks Markdown ke PDF.
+    - `convert_md_file_to_docx`: Mengonversi file `.md` ke Word.
+    - `convert_md_file_to_pdf`: Mengonversi file `.md` ke PDF.
 
 ---
 
@@ -41,11 +43,11 @@ Jika Anda ingin melakukan konversi tanpa menjalankan server MCP secara terus-men
 ## Contoh Skenario Workflow n8n
 
 1.  **Chat Trigger**: Pengguna mengirimkan catatan dalam format Markdown via Telegram.
-2.  **AI Agent**: Menerima input teks, lalu memanggil tool `convert_text_to_docx`.
-3.  **MCP Server**: Menghasilkan file `.docx` di folder proyek.
-4.  **Read Binary File**: n8n membaca file `.docx` yang baru dibuat.
-5.  **Telegram Send Document**: Mengirimkan file Word kembali ke pengguna secara otomatis.
+2.  **AI Agent**: Menerima input teks, lalu memanggil tool `convert_markdown_to_pdf`.
+3.  **MCP Server**: Menghasilkan file `.pdf` di folder proyek.
+4.  **Read Binary File**: n8n membaca file `.pdf` yang baru dibuat.
+5.  **Telegram Send Document**: Mengirimkan file PDF kembali ke pengguna secara otomatis.
 
 ## Tips untuk NixOS & Docker
 - **Docker**: Jika n8n berjalan di Docker, pastikan container n8n dapat menjangkau host (biasanya via `http://host.docker.internal:1996/...` atau IP lokal).
-- **Environment**: Keunggulan menggunakan `nix develop` adalah n8n tidak perlu menginstal `pandoc` secara global; semuanya sudah terisolasi di dalam lingkungan proyek.
+- **Environment**: Keunggulan menggunakan `nix develop` adalah n8n tidak perlu menginstal `pandoc` atau `texlive` secara global; semuanya sudah terisolasi di dalam lingkungan proyek.

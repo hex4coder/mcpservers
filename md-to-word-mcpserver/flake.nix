@@ -17,12 +17,14 @@
             python3
             uv
             pandoc
+            texlive.combined.scheme-small
           ];
 
           shellHook = ''
-            echo "MCP Python Development Environment (Markdown to Word)"
+            echo "MCP Python Development Environment (Markdown to Word & PDF)"
             echo "Python version: $(python --version)"
             echo "Pandoc version: $(pandoc --version)"
+            echo "TeX Live (pdfLaTeX) available"
             
             if [ ! -d ".venv" ]; then
               uv venv

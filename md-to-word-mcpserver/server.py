@@ -6,45 +6,71 @@ from mcp.server.fastmcp import FastMCP
 mcp = FastMCP("Markdown to Word Converter")
 
 @mcp.tool()
-def convert_text_to_docx(markdown_text: str, output_filename: str) -> str:
+def convert_markdown_to_docx(markdown_text: str, output_filename: str) -> str:
     """
-    Convert a string of Markdown text into a Word (.docx) file.
-    The file will be saved in the current directory unless a path is provided.
+    Convert Markdown text to a Microsoft Word (.docx) file.
     """
     try:
-        if not output_filename.endswith(".docx"):
+        if not output_filename.lower().endswith(".docx"):
             output_filename += ".docx"
-            
-        # Convert text to docx using pandoc
         pypandoc.convert_text(markdown_text, 'docx', format='md', outputfile=output_filename)
-        
-        absolute_path = os.path.abspath(output_filename)
-        return f"Successfully converted text to {absolute_path}"
+        return f"Successfully converted to Word: {os.path.abspath(output_filename)}"
     except Exception as e:
-        return f"Error during conversion: {str(e)}"
+        return f"Error: {str(e)}"
 
 @mcp.tool()
-def convert_file_to_docx(input_file_path: str, output_file_path: str = None) -> str:
+def convert_markdown_to_pdf(markdown_text: str, output_filename: str) -> str:
     """
-    Convert an existing Markdown (.md) file to a Word (.docx) file.
-    If output_file_path is not provided, it will use the same name as the input file.
+    Convert Markdown text to a PDF file.
+    """
+    try:
+        if not output_filename.lower().endswith(".pdf"):
+            output_filename += ".pdf"
+        
+        # Use pdflatex (provided by Nix texlive.combined.scheme-small)
+        pypandoc.convert_text(markdown_text, 'pdf', format='md', outputfile=output_filename, extra_args=['--pdf-engine=pdflatex'])
+        
+        return f"Successfully converted to PDF: {os.path.abspath(output_filename)}"
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+def convert_md_file_to_docx(input_file_path: str, output_file_path: str = None) -> str:
+    """
+    Convert an existing Markdown file (.md) to a Word (.docx) file.
     """
     try:
         if not os.path.exists(input_file_path):
-            return f"Error: Input file '{input_file_path}' not found."
-
+            return f"Error: File {input_file_path} not found."
+            
         if output_file_path is None:
             output_file_path = os.path.splitext(input_file_path)[0] + ".docx"
-        elif not output_file_path.endswith(".docx"):
+        elif not output_file_path.lower().endswith(".docx"):
             output_file_path += ".docx"
 
-        # Convert file to docx using pandoc
         pypandoc.convert_file(input_file_path, 'docx', outputfile=output_file_path)
-        
-        absolute_path = os.path.abspath(output_file_path)
-        return f"Successfully converted '{input_file_path}' to '{absolute_path}'"
+        return f"Successfully converted file to Word: {os.path.abspath(output_file_path)}"
     except Exception as e:
-        return f"Error during conversion: {str(e)}"
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+def convert_md_file_to_pdf(input_file_path: str, output_file_path: str = None) -> str:
+    """
+    Convert an existing Markdown file (.md) to a PDF file.
+    """
+    try:
+        if not os.path.exists(input_file_path):
+            return f"Error: File {input_file_path} not found."
+            
+        if output_file_path is None:
+            output_file_path = os.path.splitext(input_file_path)[0] + ".pdf"
+        elif not output_file_path.lower().endswith(".pdf"):
+            output_file_path += ".pdf"
+
+        pypandoc.convert_file(input_file_path, 'pdf', outputfile=output_file_path, extra_args=['--pdf-engine=pdflatex'])
+        return f"Successfully converted file to PDF: {os.path.abspath(output_file_path)}"
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 if __name__ == "__main__":
     import sys
