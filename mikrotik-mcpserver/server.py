@@ -166,32 +166,39 @@ def ping_mikrotik(address: str, count: int = 4) -> str:
     try:
         connection = get_api_connection()
         api = connection.get_api()
-        # In Mikrotik API, ping is a top-level command.
-        # We ensure all values in the arguments dictionary are strings to avoid 'int' object errors.
-        resource = api.get_resource('/')
-        results = resource.call('ping', {
+        # Ensure all values are strings
+        args = {
             'address': str(address),
             'count': str(count)
-        })
+        }
+        
+        # Calling ping directly on the root resource
+        resource = api.get_resource('/')
+        results = resource.call('ping', args)
         connection.disconnect()
         
         if not results:
             return f"No response from {address}."
             
         output = f"Ping results for {address} from Mikrotik:\n"
+        # Results can be a list or a single dict depending on ROS version/API
+        if isinstance(results, dict):
+            results = [results]
+            
         for i, r in enumerate(results):
-            # RouterOS API might return fields with different names or as integers
+            # Sometimes the result is just a status string or error
+            if not isinstance(r, dict):
+                output += f"- {str(r)}\n"
+                continue
+                
             time = r.get('time', r.get('avg-rtt', 'N/A'))
             size = r.get('size', r.get('packet-size', 'N/A'))
-            sent = r.get('sent', 'N/A')
-            received = r.get('received', 'N/A')
+            ttl = r.get('ttl', 'N/A')
             
-            # If it's a summary result (often the last one)
             if 'avg-rtt' in r or 'min-rtt' in r:
-                output += f"- Summary: Sent={sent}, Received={received}, Avg RTT={r.get('avg-rtt', 'N/A')}\n"
+                output += f"- Summary: Sent={r.get('sent','N/A')}, Received={r.get('received','N/A')}, Avg RTT={time}\n"
             else:
-                status = f"Size: {size} | Time: {time} | TTL: {r.get('ttl', 'N/A')}"
-                output += f"seq {i}: {status}\n"
+                output += f"seq {i}: Size: {size} | Time: {time} | TTL: {ttl}\n"
         return output
     except Exception as e:
         return f"Error: {str(e)}"
@@ -206,8 +213,14 @@ def execute_mikrotik_command(path: str, command: str, arguments: dict = None) ->
         connection = get_api_connection()
         api = connection.get_api()
         resource = api.get_resource(path)
-        args = arguments or {}
-        result = resource.call(command, args)
+        
+        # CRITICAL: Ensure all values in arguments are strings
+        clean_args = {}
+        if arguments:
+            for k, v in arguments.items():
+                clean_args[str(k)] = str(v)
+                
+        result = resource.call(command, clean_args)
         connection.disconnect()
         return f"✅ Command '{command}' on '{path}' executed.\nResult: {result}"
     except Exception as e:
