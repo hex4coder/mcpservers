@@ -27,6 +27,19 @@ def get_proxmox_api():
 # ==========================================
 
 @mcp.tool()
+def list_proxmox_nodes() -> str:
+    """Get a simple list of all node names in the Proxmox cluster."""
+    try:
+        proxmox = get_proxmox_api()
+        nodes = proxmox.nodes.get()
+        output = "🖥️ Proxmox Nodes:\n"
+        for n in nodes:
+            output += f"   - {n['node']} ({n['status'].upper()})\n"
+        return output
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@mcp.tool()
 def get_proxmox_nodes_status() -> str:
     """Get status of all Proxmox nodes (CPU, RAM, Uptime)."""
     try:

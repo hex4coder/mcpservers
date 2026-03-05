@@ -5,6 +5,7 @@ Model Context Protocol (MCP) server implementation for full life cycle managemen
 ## Tools Available
 
 ### 📊 Monitoring & Network
+- `list_proxmox_nodes`: Get a simple list of all node names in the cluster.
 - `get_proxmox_nodes_status`: Check health of physical nodes (CPU, RAM, Uptime).
 - `get_proxmox_vm_status(node, vmid)`: Real-time status of a VM/LXC.
 - `get_proxmox_storage_status(node)`: Check disk usage across storages.
