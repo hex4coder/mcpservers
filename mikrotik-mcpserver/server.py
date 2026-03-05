@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Initialize the MCP server
-mcp = FastMCP("Mikrotik Pro Management Server")
+mcp = FastMCP("Mikrotik Ultimate Management Server")
 
 # Helper function to get Mikrotik API connection
 def get_api_connection():
@@ -17,7 +17,7 @@ def get_api_connection():
     port = int(os.getenv("MIKROTIK_PORT", "8728"))
 
     if not all([host, username, password]):
-        raise Exception("Mikrotik credentials not fully configured in environment.")
+        raise Exception("Mikrotik credentials not fully configured in environment variables.")
 
     connection = routeros_api.RouterOsApiPool(
         host,
@@ -28,7 +28,9 @@ def get_api_connection():
     )
     return connection
 
-# --- SYSTEM TOOLS ---
+# ==========================================
+# 1. SYSTEM TOOLS
+# ==========================================
 
 @mcp.tool()
 def get_system_resources() -> str:
@@ -58,11 +60,13 @@ def get_system_logs(lines: int = 10) -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
-# --- NETWORK TOOLS ---
+# ==========================================
+# 2. NETWORK & INTERFACE TOOLS
+# ==========================================
 
 @mcp.tool()
 def get_interfaces() -> str:
-    """List all interfaces with their status and traffic."""
+    """List all interfaces with their status and traffic (Rx/Tx)."""
     try:
         connection = get_api_connection()
         api = connection.get_api()
@@ -76,7 +80,61 @@ def get_interfaces() -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
-# --- HOTSPOT SERVER MANAGEMENT ---
+@mcp.tool()
+def get_ip_addresses() -> str:
+    """List all IP addresses assigned to interfaces."""
+    try:
+        connection = get_api_connection()
+        api = connection.get_api()
+        ips = api.get_resource('/ip/address').get()
+        connection.disconnect()
+        return "IP Addresses:\n" + "\n".join([f"- {i['address']} on {i['interface']} ({i['network']})" for i in ips])
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+def get_routes() -> str:
+    """Get the routing table (Gateways)."""
+    try:
+        connection = get_api_connection()
+        api = connection.get_api()
+        routes = api.get_resource('/ip/route').get()
+        connection.disconnect()
+        output = "Routing Table:\n"
+        for r in routes:
+            active = "*" if r['active'] == 'true' else " "
+            output += f"{active} Dst: {r['dst-address']} | Gateway: {r.get('gateway', 'none')} | Distance: {r['distance']}\n"
+        return output
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+def get_dns_settings() -> str:
+    """Get current DNS configuration."""
+    try:
+        connection = get_api_connection()
+        api = connection.get_api()
+        dns = api.get_resource('/ip/dns').get()[0]
+        connection.disconnect()
+        return f"DNS Servers: {dns.get('servers', 'none')}\nDynamic Servers: {dns.get('dynamic-servers', 'none')}"
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+def get_arp_table() -> str:
+    """Get the ARP table (IP to MAC mappings)."""
+    try:
+        connection = get_api_connection()
+        api = connection.get_api()
+        arp = api.get_resource('/ip/arp').get()
+        connection.disconnect()
+        return "ARP Table:\n" + "\n".join([f"- {a['address']} -> {a['mac-address']} on {a['interface']}" for a in arp])
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+# ==========================================
+# 3. HOTSPOT SERVER MANAGEMENT
+# ==========================================
 
 @mcp.tool()
 def get_hotspot_servers() -> str:
@@ -93,7 +151,7 @@ def get_hotspot_servers() -> str:
 
 @mcp.tool()
 def get_hotspot_server_profiles() -> str:
-    """List hotspot server profiles (where HTML directory is set)."""
+    """List hotspot server profiles (login page configurations)."""
     try:
         connection = get_api_connection()
         api = connection.get_api()
@@ -118,11 +176,13 @@ def set_hotspot_html_directory(profile_name: str, html_directory: str) -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
-# --- HOTSPOT USER & PROFILE MANAGEMENT ---
+# ==========================================
+# 4. HOTSPOT USER & PROFILE MANAGEMENT
+# ==========================================
 
 @mcp.tool()
 def get_hotspot_user_profiles() -> str:
-    """List all user profiles including bandwidth limits (rate-limit)."""
+    """List all user profiles and their bandwidth limits (rate-limit)."""
     try:
         connection = get_api_connection()
         api = connection.get_api()
@@ -139,10 +199,7 @@ def get_hotspot_user_profiles() -> str:
 
 @mcp.tool()
 def add_hotspot_user_profile(name: str, rate_limit: str = None, shared_users: int = 1) -> str:
-    """
-    Create or update a hotspot user profile with bandwidth management.
-    Example rate_limit: '1M/1M' (Upload/Download).
-    """
+    """Create or update a hotspot user profile with bandwidth management (rate-limit)."""
     try:
         connection = get_api_connection()
         api = connection.get_api()
@@ -154,10 +211,10 @@ def add_hotspot_user_profile(name: str, rate_limit: str = None, shared_users: in
         existing = resource.get(name=name)
         if existing:
             resource.set(id=existing[0]['id'], **params)
-            msg = f"Updated profile {name}"
+            msg = f"Updated user profile: {name}"
         else:
             resource.add(**params)
-            msg = f"Created profile {name}"
+            msg = f"Created user profile: {name}"
             
         connection.disconnect()
         return msg
@@ -165,37 +222,14 @@ def add_hotspot_user_profile(name: str, rate_limit: str = None, shared_users: in
         return f"Error: {str(e)}"
 
 @mcp.tool()
-def set_user_profile(user_name: str, profile_name: str) -> str:
-    """Assign a specific profile (and its bandwidth limits) to a user."""
+def get_hotspot_users() -> str:
+    """List all registered hotspot users."""
     try:
         connection = get_api_connection()
         api = connection.get_api()
-        # Find user
-        user_resource = api.get_resource('/ip/hotspot/user')
-        user = user_resource.get(name=user_name)
-        if not user: return f"User {user_name} not found."
-        
-        # Find profile
-        profile_resource = api.get_resource('/ip/hotspot/user/profile')
-        profile = profile_resource.get(name=profile_name)
-        if not profile: return f"Profile {profile_name} not found."
-        
-        user_resource.set(id=user[0]['id'], profile=profile_name)
+        users = api.get_resource('/ip/hotspot/user').get()
         connection.disconnect()
-        return f"Successfully moved user {user_name} to profile {profile_name}"
-    except Exception as e:
-        return f"Error: {str(e)}"
-
-@mcp.tool()
-def get_hotspot_active_summary() -> str:
-    """Get summary of active hotspot sessions."""
-    try:
-        connection = get_api_connection()
-        api = connection.get_api()
-        active = api.get_resource('/ip/hotspot/active').get()
-        connection.disconnect()
-        if not active: return "No active hotspot users."
-        return f"Total Active Users: {len(active)}\n" + "\n".join([f"- {u['user']} ({u['address']}) | Uptime: {u['uptime']}" for u in active])
+        return "Registered Hotspot Users:\n" + "\n".join([f"- {u['name']} (Profile: {u['profile']}) | Comment: {u.get('comment', '-')}" for u in users])
     except Exception as e:
         return f"Error: {str(e)}"
 
@@ -211,11 +245,57 @@ def add_hotspot_user(name: str, password: str, profile: str = "default", comment
     except Exception as e:
         return f"Error: {str(e)}"
 
-# --- DHCP & ARP ---
+@mcp.tool()
+def remove_hotspot_user(name: str) -> str:
+    """Remove a hotspot user by name."""
+    try:
+        connection = get_api_connection()
+        api = connection.get_api()
+        resource = api.get_resource('/ip/hotspot/user')
+        user = resource.get(name=name)
+        if not user: return f"User {name} not found."
+        resource.remove(id=user[0]['id'])
+        connection.disconnect()
+        return f"Successfully removed hotspot user: {name}"
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+def set_user_profile(user_name: str, profile_name: str) -> str:
+    """Assign a specific profile (bandwidth tier) to a user."""
+    try:
+        connection = get_api_connection()
+        api = connection.get_api()
+        user_resource = api.get_resource('/ip/hotspot/user')
+        user = user_resource.get(name=user_name)
+        if not user: return f"User {user_name} not found."
+        
+        user_resource.set(id=user[0]['id'], profile=profile_name)
+        connection.disconnect()
+        return f"Successfully moved user {user_name} to profile {profile_name}"
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+def get_hotspot_active_summary() -> str:
+    """Monitor currently active hotspot sessions."""
+    try:
+        connection = get_api_connection()
+        api = connection.get_api()
+        active = api.get_resource('/ip/hotspot/active').get()
+        connection.disconnect()
+        if not active: return "No active hotspot users."
+        return f"Total Active Users: {len(active)}\n" + "\n".join([f"- {u['user']} ({u['address']}) | Uptime: {u['uptime']}" for u in active])
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+# ==========================================
+# 5. DHCP MANAGEMENT
+# ==========================================
 
 @mcp.tool()
 def get_dhcp_leases_detailed() -> str:
-    """Get detailed DHCP lease information."""
+    """List all DHCP leases with hostnames and MAC addresses."""
     try:
         connection = get_api_connection()
         api = connection.get_api()
@@ -224,6 +304,10 @@ def get_dhcp_leases_detailed() -> str:
         return "DHCP Leases:\n" + "\n".join([f"- {l.get('host-name', 'Unknown')} | {l['address']} | MAC: {l['mac-address']} | Status: {l['status']}" for l in leases])
     except Exception as e:
         return f"Error: {str(e)}"
+
+# ==========================================
+# MAIN EXECUTION
+# ==========================================
 
 if __name__ == "__main__":
     import sys
