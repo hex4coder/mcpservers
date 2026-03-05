@@ -35,7 +35,7 @@ def get_api_connection():
 # ==========================================
 
 @mcp.tool()
-def get_system_resources() -> str:
+def get_mikrotik_resources() -> str:
     """Get CPU, Memory (RAM), and Uptime status of Mikrotik."""
     try:
         connection = get_api_connection()
@@ -57,8 +57,8 @@ def get_system_resources() -> str:
         return f"Error: {str(e)}"
 
 @mcp.tool()
-def get_storage_status() -> str:
-    """Get Disk/Storage usage on Mikrotik."""
+def get_mikrotik_storage() -> str:
+    """Get Disk/Storage usage on Mikrotik internal storage."""
     try:
         connection = get_api_connection()
         api = connection.get_api()
@@ -76,15 +76,15 @@ def get_storage_status() -> str:
         return f"Error: {str(e)}"
 
 @mcp.tool()
-def get_system_logs(lines: int = 10) -> str:
-    """Get the last N lines of system logs."""
+def get_mikrotik_logs(lines: int = 10) -> str:
+    """Get the last N lines of Mikrotik system logs."""
     try:
         connection = get_api_connection()
         api = connection.get_api()
         logs = api.get_resource('/log').get()
         connection.disconnect()
         last_logs = logs[-lines:] if len(logs) > lines else logs
-        return "📜 Recent Logs:\n" + "\n".join([f"[{l['time']}] {l['topics']}: {l['message']}" for l in last_logs])
+        return "📜 Mikrotik Recent Logs:\n" + "\n".join([f"[{l['time']}] {l['topics']}: {l['message']}" for l in last_logs])
     except Exception as e:
         return f"Error: {str(e)}"
 
@@ -93,14 +93,14 @@ def get_system_logs(lines: int = 10) -> str:
 # ==========================================
 
 @mcp.tool()
-def get_interfaces() -> str:
-    """List all interfaces with their status and traffic."""
+def get_mikrotik_interfaces() -> str:
+    """List all Mikrotik interfaces with their status and traffic."""
     try:
         connection = get_api_connection()
         api = connection.get_api()
         interfaces = api.get_resource('/interface').get()
         connection.disconnect()
-        output = "🌐 Interfaces Status:\n"
+        output = "🌐 Mikrotik Interfaces Status:\n"
         for i in interfaces:
             status = "UP" if i['running'] == 'true' else "DOWN"
             output += f"   - {i['name']} ({i['type']}): {status} | Rx: {int(i['rx-byte'])/1024/1024:.1f}MB, Tx: {int(i['tx-byte'])/1024/1024:.1f}MB\n"
@@ -109,8 +109,8 @@ def get_interfaces() -> str:
         return f"Error: {str(e)}"
 
 @mcp.tool()
-def get_ip_addresses() -> str:
-    """List all IP addresses assigned to interfaces."""
+def get_mikrotik_ip_addresses() -> str:
+    """List all IP addresses assigned to Mikrotik interfaces."""
     try:
         connection = get_api_connection()
         api = connection.get_api()
@@ -121,8 +121,8 @@ def get_ip_addresses() -> str:
         return f"Error: {str(e)}"
 
 @mcp.tool()
-def get_routes() -> str:
-    """Get the routing table (Gateways)."""
+def get_mikrotik_routes() -> str:
+    """Get the Mikrotik routing table (Gateways)."""
     try:
         connection = get_api_connection()
         api = connection.get_api()
@@ -137,8 +137,8 @@ def get_routes() -> str:
         return f"Error: {str(e)}"
 
 @mcp.tool()
-def get_dns_settings() -> str:
-    """Get DNS configuration."""
+def get_mikrotik_dns_settings() -> str:
+    """Get Mikrotik DNS configuration."""
     try:
         connection = get_api_connection()
         api = connection.get_api()
@@ -149,8 +149,8 @@ def get_dns_settings() -> str:
         return f"Error: {str(e)}"
 
 @mcp.tool()
-def get_arp_table() -> str:
-    """Get the ARP table (IP to MAC mappings)."""
+def get_mikrotik_arp_table() -> str:
+    """Get the Mikrotik ARP table (IP to MAC mappings)."""
     try:
         connection = get_api_connection()
         api = connection.get_api()
@@ -317,14 +317,14 @@ def get_hotspot_active_summary() -> str:
 # ==========================================
 
 @mcp.tool()
-def get_dhcp_leases_detailed() -> str:
-    """List all DHCP leases with hostnames and MAC addresses."""
+def get_mikrotik_dhcp_leases() -> str:
+    """List all DHCP leases from Mikrotik with hostnames and MAC addresses."""
     try:
         connection = get_api_connection()
         api = connection.get_api()
         leases = api.get_resource('/ip/dhcp-server/lease').get()
         connection.disconnect()
-        return "DHCP Leases:\n" + "\n".join([f"- {l.get('host-name', 'Unknown')} | {l['address']} | MAC: {l['mac-address']} | Status: {l['status']}" for l in leases])
+        return "Mikrotik DHCP Leases:\n" + "\n".join([f"- {l.get('host-name', 'Unknown')} | {l['address']} | MAC: {l['mac-address']} | Status: {l['status']}" for l in leases])
     except Exception as e:
         return f"Error: {str(e)}"
 
