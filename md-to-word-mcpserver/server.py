@@ -74,7 +74,10 @@ def convert_md_file_to_pdf(input_file_path: str, output_file_path: str = None) -
 
 if __name__ == "__main__":
     import sys
-    
+    import uvicorn
+    from starlette.applications import Starlette
+    from starlette.routing import Mount
+
     # Check for transport type in command line arguments
     transport_type = "stdio"
     if len(sys.argv) > 1:
@@ -82,14 +85,11 @@ if __name__ == "__main__":
             transport_type = "sse"
     
     if transport_type == "sse":
-        # Configure host, port and endpoint path for n8n or network access
-        # This will run a Starlette app on 0.0.0.0:1996
-        # The endpoint will be http://<ip>:1996/md-to-word-mcpserver/sse
-        mcp.run(
-            transport="sse",
-            host="0.0.0.0",
-            port=1996,
-            sse_path="/md-to-word-mcpserver/sse"
-        )
+        # Create a Starlette app and mount the MCP app under the custom path
+        app = Starlette(routes=[
+            Mount("/md-to-word-mcpserver", mcp.app)
+        ])
+        print("Starting Markdown MCP Server on http://0.0.0.0:1996/md-to-word-mcpserver/sse")
+        uvicorn.run(app, host="0.0.0.0", port=1996)
     else:
         mcp.run(transport="stdio")

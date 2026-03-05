@@ -236,11 +236,19 @@ def get_storage_status(node: str) -> str:
 
 if __name__ == "__main__":
     import sys
+    import uvicorn
+    from starlette.applications import Starlette
+    from starlette.routing import Mount
+
     transport_type = "stdio"
     if len(sys.argv) > 1 and sys.argv[1] == "--sse":
         transport_type = "sse"
     
     if transport_type == "sse":
-        mcp.run(transport="sse", host="0.0.0.0", port=1998, sse_path="/proxmox-mcpserver/sse")
+        app = Starlette(routes=[
+            Mount("/proxmox-mcpserver", mcp.app)
+        ])
+        print("Starting Proxmox MCP Server on http://0.0.0.0:1998/proxmox-mcpserver/sse")
+        uvicorn.run(app, host="0.0.0.0", port=1998)
     else:
         mcp.run(transport="stdio")

@@ -311,11 +311,21 @@ def get_dhcp_leases_detailed() -> str:
 
 if __name__ == "__main__":
     import sys
+    import uvicorn
+    from starlette.applications import Starlette
+    from starlette.routing import Mount
+
     transport_type = "stdio"
     if len(sys.argv) > 1 and sys.argv[1] == "--sse":
         transport_type = "sse"
     
     if transport_type == "sse":
-        mcp.run(transport="sse", host="0.0.0.0", port=1997, sse_path="/mikrotik-mcpserver/sse")
+        # mcp.app is a starlette application providing /sse and /messages
+        # We mount it under the custom path
+        app = Starlette(routes=[
+            Mount("/mikrotik-mcpserver", mcp.app)
+        ])
+        print("Starting Mikrotik MCP Server on http://0.0.0.0:1997/mikrotik-mcpserver/sse")
+        uvicorn.run(app, host="0.0.0.0", port=1997)
     else:
         mcp.run(transport="stdio")

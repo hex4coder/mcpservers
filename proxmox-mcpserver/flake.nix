@@ -20,15 +20,14 @@
 
           shellHook = ''
             echo "Proxmox MCP Python Development Environment"
-            echo "Python version: $(python --version)"
             
             if [ ! -d ".venv" ]; then
               uv venv
             fi
             source .venv/bin/activate
             
-            # Install mcp sdk and proxmoxer
-            uv add "mcp[cli]" proxmoxer requests python-dotenv
+            # Install dependencies
+            uv add "mcp[cli]" proxmoxer requests python-dotenv uvicorn starlette
           '';
         };
       }

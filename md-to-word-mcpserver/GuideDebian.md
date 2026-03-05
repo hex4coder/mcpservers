@@ -35,7 +35,7 @@ source .venv/bin/activate
 ### 2. Instal Library Python
 Instal SDK MCP dan wrapper Pandoc:
 ```bash
-pip install "mcp[cli]" pypandoc
+pip install "mcp[cli]" pypandoc uvicorn starlette
 ```
 
 ---

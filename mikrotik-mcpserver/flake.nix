@@ -20,15 +20,14 @@
 
           shellHook = ''
             echo "Mikrotik MCP Python Development Environment"
-            echo "Python version: $(python --version)"
             
             if [ ! -d ".venv" ]; then
               uv venv
             fi
             source .venv/bin/activate
             
-            # Install mcp sdk and routeros-api
-            uv add "mcp[cli]" routeros-api python-dotenv
+            # Install dependencies
+            uv add "mcp[cli]" routeros-api python-dotenv uvicorn starlette
           '';
         };
       }

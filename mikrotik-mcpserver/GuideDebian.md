@@ -30,7 +30,7 @@ source .venv/bin/activate
 
 ### 2. Instal Library Python
 ```bash
-pip install "mcp[cli]" routeros-api python-dotenv
+pip install "mcp[cli]" routeros-api python-dotenv uvicorn starlette
 ```
 
 ### 3. Konfigurasi Environment
