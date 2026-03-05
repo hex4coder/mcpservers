@@ -59,6 +59,25 @@ def list_all_vms(node: str) -> str:
         return f"Error: {str(e)}"
 
 @mcp.tool()
+def get_vm_status(node: str, vmid: int) -> str:
+    """Get detailed real-time status of a specific VM or Container."""
+    try:
+        proxmox = get_proxmox_api()
+        try:
+            status = proxmox.nodes(node).qemu(vmid).status.current.get()
+        except:
+            status = proxmox.nodes(node).lxc(vmid).status.current.get()
+            
+        return (f"Status for {status.get('name', vmid)}:\n"
+                f"- State: {status['status']}\n"
+                f"- CPU Usage: {status.get('cpu', 0)*100:.1f}%\n"
+                f"- RAM: {int(status.get('mem', 0))/1024/1024:.1f}MB\n"
+                f"- Net In: {int(status.get('netin', 0))/1024/1024:.2f}MB, Net Out: {int(status.get('netout', 0))/1024/1024:.2f}MB\n"
+                f"- Uptime: {status.get('uptime', 0)}s")
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@mcp.tool()
 def manage_vm_power(node: str, vmid: int, action: str) -> str:
     """
     Manage VM/Container power status.
@@ -142,13 +161,14 @@ def create_vm_from_template(node: str, vmid: int, template_vmid: int, name: str 
 # --- CONFIGURATION TOOLS ---
 
 @mcp.tool()
-def set_vm_config(node: str, vmid: int, cores: int = None, memory: int = None) -> str:
-    """Update CPU cores or Memory (in MB) for a VM."""
+def set_vm_config(node: str, vmid: int, cores: int = None, memory: int = None, onboot: bool = None) -> str:
+    """Update CPU cores, Memory (MB), or Onboot status for a VM."""
     try:
         proxmox = get_proxmox_api()
         params = {}
         if cores: params['cores'] = cores
         if memory: params['memory'] = memory
+        if onboot is not None: params['onboot'] = 1 if onboot else 0
         
         if not params: return "No configuration changes provided."
         
@@ -158,13 +178,14 @@ def set_vm_config(node: str, vmid: int, cores: int = None, memory: int = None) -
         return f"Error: {str(e)}"
 
 @mcp.tool()
-def set_container_config(node: str, vmid: int, cores: int = None, memory: int = None) -> str:
-    """Update CPU cores or Memory (in MB) for a Container."""
+def set_container_config(node: str, vmid: int, cores: int = None, memory: int = None, onboot: bool = None) -> str:
+    """Update CPU cores, Memory (MB), or Onboot status for a Container."""
     try:
         proxmox = get_proxmox_api()
         params = {}
         if cores: params['cores'] = cores
         if memory: params['memory'] = memory
+        if onboot is not None: params['onboot'] = 1 if onboot else 0
         
         if not params: return "No configuration changes provided."
         
@@ -173,7 +194,7 @@ def set_container_config(node: str, vmid: int, cores: int = None, memory: int = 
     except Exception as e:
         return f"Error: {str(e)}"
 
-# --- BACKUP & STORAGE ---
+# --- BACKUP & SNAPSHOT TOOLS ---
 
 @mcp.tool()
 def create_vm_snapshot(node: str, vmid: int, snapname: str, description: str = "") -> str:
@@ -184,6 +205,19 @@ def create_vm_snapshot(node: str, vmid: int, snapname: str, description: str = "
         return f"Creating snapshot '{snapname}' for VM {vmid}..."
     except Exception as e:
         return f"Error: {str(e)}"
+
+@mcp.tool()
+def list_vm_snapshots(node: str, vmid: int) -> str:
+    """List all snapshots of a specific VM."""
+    try:
+        proxmox = get_proxmox_api()
+        snapshots = proxmox.nodes(node).qemu(vmid).snapshot.get()
+        if not snapshots: return "No snapshots found."
+        return f"Snapshots for VM {vmid}:\n" + "\n".join([f"- {s['name']} | {s.get('description', '-')}" for s in snapshots])
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+# --- STORAGE TOOLS ---
 
 @mcp.tool()
 def get_storage_status(node: str) -> str:
