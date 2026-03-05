@@ -1,49 +1,49 @@
 # GEMINI.md - Instructional Context
 
-This document provides essential information and instructions for interacting with the **Markdown to Word & PDF MCP Server** project.
+This document provides essential information and instructions for interacting with the **MCP Servers Suite** project.
 
 ## Project Overview
 
-*   **Purpose:** A Model Context Protocol (MCP) server that provides tools for converting Markdown text or files into Microsoft Word (`.docx`) and PDF documents.
-*   **Target Platform:** NixOS (using Nix Flakes for environment reproducibility).
+*   **Purpose:** A suite of Model Context Protocol (MCP) servers to extend AI agent capabilities:
+    1.  **Markdown to Word & PDF**: Document conversion tools.
+    2.  **Mikrotik Management**: Network monitoring and management via RouterOS API.
+*   **Target Platform:** NixOS (Nix Flakes) and Debian/Ubuntu systems.
 *   **Key Technologies:**
-    *   **Python 3**: The core implementation language.
-    *   **FastMCP (mcp SDK)**: High-level framework for building MCP servers.
-    *   **Pandoc**: The underlying document conversion engine.
-    *   **TeX Live (pdflatex)**: Engine for PDF generation.
-    *   **pypandoc**: Python wrapper for Pandoc.
-    *   **uv**: Fast Python package installer and virtual environment manager.
+    *   **Python 3**: Core implementation language.
+    *   **FastMCP**: SDK for building MCP servers.
+    *   **Pandoc & TeX Live**: Document conversion (DOCX/PDF).
+    *   **routeros-api**: Library for Mikrotik integration.
+    *   **uv**: Package and environment management.
 
 ## Architecture
 
-The project is located in the `md-to-word-mcpserver` directory:
-- `md-to-word-mcpserver/server.py`: Contains the server logic and tool definitions.
-- `md-to-word-mcpserver/flake.nix`: Defines the system-level dependencies.
-- `md-to-word-mcpserver/README.md`: Basic setup and usage.
-- `md-to-word-mcpserver/GuideUse.md`: Guide for n8n integration.
-- `md-to-word-mcpserver/GuideDebian.md`: Guide for Debian/Ubuntu setup.
+### 1. Markdown to Word & PDF
+Located in `md-to-word-mcpserver/`:
+- `server.py`: Conversion tools (`convert_markdown_to_pdf`, etc.).
+- Port: `1996` (SSE Mode).
+
+### 2. Mikrotik Management
+Located in `mikrotik-mcpserver/`:
+- `server.py`: Network tools (`get_hotspot_active_users`, `get_dhcp_leases`, etc.).
+- Port: `1997` (SSE Mode).
 
 ## Building and Running
 
-### Development Environment
-To enter the development shell:
+### Development Environment (NixOS)
+To enter the development shell for a specific server:
 ```bash
-cd md-to-word-mcpserver
+cd <server-directory>
 nix develop
 ```
 
-### Running the Server
+### Running for n8n (SSE)
 ```bash
-# Within 'nix develop' shell inside md-to-word-mcpserver/
-python server.py # For stdio (Claude)
-python server.py --sse # For network (n8n)
-```
+# Markdown Server
+cd md-to-word-mcpserver && nix develop --command python server.py --sse
 
-## Key Tools
-- `convert_markdown_to_docx`
-- `convert_markdown_to_pdf`
-- `convert_md_file_to_docx`
-- `convert_md_file_to_pdf`
+# Mikrotik Server
+cd mikrotik-mcpserver && nix develop --command python server.py --sse
+```
 
 ## Deployment / Claude Desktop Integration
 
@@ -54,10 +54,20 @@ python server.py --sse # For network (n8n)
       "command": "nix",
       "args": [
         "develop",
-        "/path/to/project/md-to-word-mcpserver",
+        "/absolute/path/to/md-to-word-mcpserver",
         "--command",
         "python",
-        "/path/to/project/md-to-word-mcpserver/server.py"
+        "/absolute/path/to/md-to-word-mcpserver/server.py"
+      ]
+    },
+    "mikrotik-mgmt": {
+      "command": "nix",
+      "args": [
+        "develop",
+        "/absolute/path/to/mikrotik-mcpserver",
+        "--command",
+        "python",
+        "/absolute/path/to/mikrotik-mcpserver/server.py"
       ]
     }
   }
