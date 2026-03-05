@@ -106,9 +106,20 @@ def update_proxmox_repositories(node: str) -> str:
     """Trigger an APT update (repository refresh) on a Proxmox node."""
     try:
         proxmox = get_proxmox_api()
-        # This returns a task ID representing the APT update process
-        task_id = proxmox.nodes(node).apt.update.post()
-        return f"🔄 Repository update initiated on node '{node}'. Task ID: {task_id}"
+        try:
+            # This returns a task ID representing the APT update process
+            task_id = proxmox.nodes(node).apt.update.post()
+            return f"🔄 Repository update initiated on node '{node}'. Task ID: {task_id}"
+        except Exception as api_err:
+            if "501" in str(api_err) or "Not Implemented" in str(api_err):
+                # Fallback to shell command if API fails with 501
+                import subprocess
+                res = subprocess.run("apt update", shell=True, capture_output=True, text=True)
+                if res.returncode == 0:
+                    return f"✅ Repository update (apt update) completed via Shell Fallback on node '{node}'.\nOutput Summary:\n{res.stdout.splitlines()[-1]}"
+                else:
+                    return f"❌ Repository update FAILED via Shell Fallback on node '{node}':\n{res.stderr or res.stdout}"
+            raise api_err
     except Exception as e:
         return f"Error: {str(e)}"
 
@@ -117,20 +128,40 @@ def list_proxmox_packages(node: str) -> str:
     """List available updates and packages on a Proxmox node."""
     try:
         proxmox = get_proxmox_api()
-        packages = proxmox.nodes(node).apt.list.get()
-        updates = [p for p in packages if p.get('Update')]
-        
-        output = f"📦 Proxmox Package Status for Node '{node}':\n"
-        output += f"   - Total Packages: {len(packages)}\n"
-        output += f"   - Updates Available: {len(updates)}\n"
-        
-        if updates:
-            output += "\n📝 Summary of available updates:\n"
-            for p in updates[:15]:  # Show top 15 updates
-                output += f"     - {p['Package']} ({p['OldVersion']} -> {p['Version']})\n"
-            if len(updates) > 15:
-                output += f"     ... and {len(updates)-15} more.\n"
-        return output
+        try:
+            packages = proxmox.nodes(node).apt.list.get()
+            updates = [p for p in packages if p.get('Update')]
+            
+            output = f"📦 Proxmox Package Status for Node '{node}' (via API):\n"
+            output += f"   - Total Packages: {len(packages)}\n"
+            output += f"   - Updates Available: {len(updates)}\n"
+            
+            if updates:
+                output += "\n📝 Summary of available updates:\n"
+                for p in updates[:15]:  # Show top 15 updates
+                    output += f"     - {p['Package']} ({p['OldVersion']} -> {p['Version']})\n"
+                if len(updates) > 15:
+                    output += f"     ... and {len(updates)-15} more.\n"
+            return output
+        except Exception as api_err:
+            if "501" in str(api_err) or "Not Implemented" in str(api_err):
+                # Fallback to shell command if API fails with 501
+                import subprocess
+                res = subprocess.run("apt list --upgradable", shell=True, capture_output=True, text=True)
+                if res.returncode == 0:
+                    lines = res.stdout.splitlines()
+                    # First line is usually "Listing..."
+                    updates = lines[1:] if len(lines) > 1 else []
+                    output = f"📦 Proxmox Package Status for Node '{node}' (via Shell Fallback):\n"
+                    output += f"   - Updates Available: {len(updates)}\n"
+                    if updates:
+                        output += "\n📝 Summary of available updates:\n"
+                        for line in updates[:15]:
+                            output += f"     - {line}\n"
+                        if len(updates) > 15:
+                            output += f"     ... and {len(updates)-15} more.\n"
+                    return output
+            raise api_err
     except Exception as e:
         return f"Error: {str(e)}"
 
