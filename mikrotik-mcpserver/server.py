@@ -1,13 +1,14 @@
 import os
 import routeros_api
 from mcp.server.fastmcp import FastMCP
+from mcp.server.sse import SseServerTransport
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
 # Initialize the MCP server
-mcp = FastMCP("Mikrotik Ultimate Management Server")
+mcp = FastMCP("Mikrotik Pro Management Server")
 
 # Helper function to get Mikrotik API connection
 def get_api_connection():
@@ -17,7 +18,7 @@ def get_api_connection():
     port = int(os.getenv("MIKROTIK_PORT", "8728"))
 
     if not all([host, username, password]):
-        raise Exception("Mikrotik credentials not fully configured in environment variables.")
+        raise Exception("Mikrotik credentials not fully configured in environment.")
 
     connection = routeros_api.RouterOsApiPool(
         host,
@@ -28,9 +29,7 @@ def get_api_connection():
     )
     return connection
 
-# ==========================================
-# 1. SYSTEM TOOLS
-# ==========================================
+# --- SYSTEM TOOLS ---
 
 @mcp.tool()
 def get_system_resources() -> str:
@@ -60,13 +59,11 @@ def get_system_logs(lines: int = 10) -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
-# ==========================================
-# 2. NETWORK & INTERFACE TOOLS
-# ==========================================
+# --- NETWORK TOOLS ---
 
 @mcp.tool()
 def get_interfaces() -> str:
-    """List all interfaces with their status and traffic (Rx/Tx)."""
+    """List all interfaces with their status and traffic."""
     try:
         connection = get_api_connection()
         api = connection.get_api()
@@ -110,7 +107,7 @@ def get_routes() -> str:
 
 @mcp.tool()
 def get_dns_settings() -> str:
-    """Get current DNS configuration."""
+    """Get DNS configuration."""
     try:
         connection = get_api_connection()
         api = connection.get_api()
@@ -132,9 +129,7 @@ def get_arp_table() -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
-# ==========================================
-# 3. HOTSPOT SERVER MANAGEMENT
-# ==========================================
+# --- HOTSPOT SERVER MANAGEMENT ---
 
 @mcp.tool()
 def get_hotspot_servers() -> str:
@@ -176,9 +171,7 @@ def set_hotspot_html_directory(profile_name: str, html_directory: str) -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
-# ==========================================
-# 4. HOTSPOT USER & PROFILE MANAGEMENT
-# ==========================================
+# --- HOTSPOT USER & PROFILE MANAGEMENT ---
 
 @mcp.tool()
 def get_hotspot_user_profiles() -> str:
@@ -289,9 +282,7 @@ def get_hotspot_active_summary() -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
-# ==========================================
-# 5. DHCP MANAGEMENT
-# ==========================================
+# --- DHCP MANAGEMENT ---
 
 @mcp.tool()
 def get_dhcp_leases_detailed() -> str:
@@ -305,26 +296,37 @@ def get_dhcp_leases_detailed() -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
-# ==========================================
-# MAIN EXECUTION
-# ==========================================
-
 if __name__ == "__main__":
     import sys
     import uvicorn
     from starlette.applications import Starlette
-    from starlette.routing import Mount
+    from starlette.routing import Route, Mount
+    from starlette.requests import Request
 
     transport_type = "stdio"
     if len(sys.argv) > 1 and sys.argv[1] == "--sse":
         transport_type = "sse"
     
     if transport_type == "sse":
-        # mcp.app is a starlette application providing /sse and /messages
-        # We mount it under the custom path
+        # Initialize SSE transport with a custom message path
+        transport = SseServerTransport("/mikrotik-mcpserver/messages")
+
+        async def handle_sse(request: Request):
+            async with transport.connect_sse(
+                request.scope, request.receive, request._send
+            ) as streams:
+                # Access the underlying LowLevelServer from FastMCP
+                await mcp._mcp_server.run(
+                    streams[0], 
+                    streams[1], 
+                    mcp._mcp_server.create_initialization_options()
+                )
+
         app = Starlette(routes=[
-            Mount("/mikrotik-mcpserver", mcp.app)
+            Route("/mikrotik-mcpserver/sse", endpoint=handle_sse),
+            Mount("/mikrotik-mcpserver/messages", app=transport.handle_post_message),
         ])
+        
         print("Starting Mikrotik MCP Server on http://0.0.0.0:1997/mikrotik-mcpserver/sse")
         uvicorn.run(app, host="0.0.0.0", port=1997)
     else:

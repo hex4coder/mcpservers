@@ -27,7 +27,7 @@
             source .venv/bin/activate
             
             # Install dependencies
-            uv add "mcp[cli]" routeros-api python-dotenv uvicorn starlette
+            uv add "mcp[cli]" routeros-api python-dotenv uvicorn starlette sse-starlette
           '';
         };
       }

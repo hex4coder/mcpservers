@@ -29,7 +29,7 @@
             source .venv/bin/activate
             
             # Install dependencies
-            uv add "mcp[cli]" pypandoc uvicorn starlette
+            uv add "mcp[cli]" pypandoc uvicorn starlette sse-starlette
           '';
         };
       }

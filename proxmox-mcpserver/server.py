@@ -1,6 +1,7 @@
 import os
 from proxmoxer import ProxmoxAPI
 from mcp.server.fastmcp import FastMCP
+from mcp.server.sse import SseServerTransport
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -238,16 +239,31 @@ if __name__ == "__main__":
     import sys
     import uvicorn
     from starlette.applications import Starlette
-    from starlette.routing import Mount
+    from starlette.routing import Route, Mount
+    from starlette.requests import Request
 
     transport_type = "stdio"
     if len(sys.argv) > 1 and sys.argv[1] == "--sse":
         transport_type = "sse"
     
     if transport_type == "sse":
+        transport = SseServerTransport("/proxmox-mcpserver/messages")
+
+        async def handle_sse(request: Request):
+            async with transport.connect_sse(
+                request.scope, request.receive, request._send
+            ) as streams:
+                await mcp._mcp_server.run(
+                    streams[0], 
+                    streams[1], 
+                    mcp._mcp_server.create_initialization_options()
+                )
+
         app = Starlette(routes=[
-            Mount("/proxmox-mcpserver", mcp.app)
+            Route("/proxmox-mcpserver/sse", endpoint=handle_sse),
+            Mount("/proxmox-mcpserver/messages", app=transport.handle_post_message),
         ])
+        
         print("Starting Proxmox MCP Server on http://0.0.0.0:1998/proxmox-mcpserver/sse")
         uvicorn.run(app, host="0.0.0.0", port=1998)
     else:

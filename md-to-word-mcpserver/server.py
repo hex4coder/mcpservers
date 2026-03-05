@@ -1,9 +1,10 @@
 import os
 import pypandoc
 from mcp.server.fastmcp import FastMCP
+from mcp.server.sse import SseServerTransport
 
 # Initialize the MCP server
-mcp = FastMCP("Markdown to Word Converter")
+mcp = FastMCP("Markdown to Word & PDF Converter")
 
 @mcp.tool()
 def convert_markdown_to_docx(markdown_text: str, output_filename: str) -> str:
@@ -76,7 +77,8 @@ if __name__ == "__main__":
     import sys
     import uvicorn
     from starlette.applications import Starlette
-    from starlette.routing import Mount
+    from starlette.routing import Route, Mount
+    from starlette.requests import Request
 
     # Check for transport type in command line arguments
     transport_type = "stdio"
@@ -85,10 +87,23 @@ if __name__ == "__main__":
             transport_type = "sse"
     
     if transport_type == "sse":
-        # Create a Starlette app and mount the MCP app under the custom path
+        transport = SseServerTransport("/md-to-word-mcpserver/messages")
+
+        async def handle_sse(request: Request):
+            async with transport.connect_sse(
+                request.scope, request.receive, request._send
+            ) as streams:
+                await mcp._mcp_server.run(
+                    streams[0], 
+                    streams[1], 
+                    mcp._mcp_server.create_initialization_options()
+                )
+
         app = Starlette(routes=[
-            Mount("/md-to-word-mcpserver", mcp.app)
+            Route("/md-to-word-mcpserver/sse", endpoint=handle_sse),
+            Mount("/md-to-word-mcpserver/messages", app=transport.handle_post_message),
         ])
+        
         print("Starting Markdown MCP Server on http://0.0.0.0:1996/md-to-word-mcpserver/sse")
         uvicorn.run(app, host="0.0.0.0", port=1996)
     else:

@@ -24,7 +24,7 @@ source .venv/bin/activate
 
 ### 2. Instal Library Python
 ```bash
-pip install "mcp[cli]" proxmoxer requests python-dotenv uvicorn starlette
+pip install "mcp[cli]" proxmoxer requests python-dotenv uvicorn starlette sse-starlette
 ```
 
 ### 3. Konfigurasi Environment
