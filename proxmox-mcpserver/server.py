@@ -66,6 +66,74 @@ def get_proxmox_storage_status(node: str) -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
+@mcp.tool()
+def get_proxmox_node_networks(node: str) -> str:
+    """List all network interfaces and IP addresses for a specific Proxmox node."""
+    try:
+        proxmox = get_proxmox_api()
+        networks = proxmox.nodes(node).network.get()
+        output = f"🌐 Network Interfaces on Node '{node}':\n"
+        for net in networks:
+            ip = net.get('address', 'N/A')
+            cidr = net.get('cidr', 'N/A')
+            iface_type = net.get('type', 'Unknown')
+            output += f"   - {net['iface']} ({iface_type}): {ip} | CIDR: {cidr} | Status: {'Active' if net.get('active') else 'Inactive'}\n"
+        return output
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+def check_proxmox_connectivity(target: str = "google.com", count: int = 4) -> str:
+    """Check network connectivity from the server using ping."""
+    import subprocess
+    try:
+        # We run the ping command locally on the system where the MCP server is hosted
+        result = subprocess.run(
+            ["ping", "-c", str(count), target],
+            capture_output=True,
+            text=True,
+            timeout=15
+        )
+        if result.returncode == 0:
+            return f"✅ Connectivity to {target} OK:\n{result.stdout}"
+        else:
+            return f"❌ Connectivity to {target} FAILED:\n{result.stderr or result.stdout}"
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+def update_proxmox_repositories(node: str) -> str:
+    """Trigger an APT update (repository refresh) on a Proxmox node."""
+    try:
+        proxmox = get_proxmox_api()
+        # This returns a task ID representing the APT update process
+        task_id = proxmox.nodes(node).apt.update.post()
+        return f"🔄 Repository update initiated on node '{node}'. Task ID: {task_id}"
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+def list_proxmox_packages(node: str) -> str:
+    """List available updates and packages on a Proxmox node."""
+    try:
+        proxmox = get_proxmox_api()
+        packages = proxmox.nodes(node).apt.list.get()
+        updates = [p for p in packages if p.get('Update')]
+        
+        output = f"📦 Proxmox Package Status for Node '{node}':\n"
+        output += f"   - Total Packages: {len(packages)}\n"
+        output += f"   - Updates Available: {len(updates)}\n"
+        
+        if updates:
+            output += "\n📝 Summary of available updates:\n"
+            for p in updates[:15]:  # Show top 15 updates
+                output += f"     - {p['Package']} ({p['OldVersion']} -> {p['Version']})\n"
+            if len(updates) > 15:
+                output += f"     ... and {len(updates)-15} more.\n"
+        return output
+    except Exception as e:
+        return f"Error: {str(e)}"
+
 # ==========================================
 # 2. VM/CONTAINER MANAGEMENT
 # ==========================================

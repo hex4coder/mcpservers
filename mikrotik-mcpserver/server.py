@@ -160,6 +160,28 @@ def get_mikrotik_arp_table() -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
+@mcp.tool()
+def ping_mikrotik(address: str, count: int = 4) -> str:
+    """Ping a target (IP or Domain) from the Mikrotik router."""
+    try:
+        connection = get_api_connection()
+        api = connection.get_api()
+        ping_resource = api.get_resource('/ping')
+        # Mikrotik ping command returns a list of results
+        results = ping_resource.call('ping', {'address': address, 'count': str(count)})
+        connection.disconnect()
+        
+        output = f"Ping results for {address} from Mikrotik:\n"
+        for r in results:
+            if 'time' in r:
+                status = f"Size: {r.get('size', 'N/A')} | Time: {r.get('time', 'N/A')} | TTL: {r.get('ttl', 'N/A')}"
+            else:
+                status = f"Status: {r.get('status', 'Timeout/Error')}"
+            output += f"- {status}\n"
+        return output
+    except Exception as e:
+        return f"Error: {str(e)}"
+
 # ==========================================
 # 3. HOTSPOT SERVER MANAGEMENT
 # ==========================================

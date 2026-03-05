@@ -45,6 +45,11 @@ Isi sesuai dengan IP, Username, dan Password Mikrotik sekolah Anda.
 
 ## Menjalankan Server
 
+### Fitur Baru untuk Mikrotik
+Kini Anda dapat melakukan tes jaringan langsung:
+- **Cek IP**: Gunakan `get_mikrotik_ip_addresses` untuk daftar interface.
+- **Tes Koneksi**: Gunakan `ping_mikrotik` untuk melakukan ping dari router.
+
 ### Mode 1: Untuk Claude Desktop (stdio)
 ```bash
 python3 server.py

@@ -15,12 +15,18 @@ Model Context Protocol (MCP) server implementation for deep management of Mikrot
 - `get_hotspot_active_summary`: Monitor current active sessions.
 
 ### 🌐 Network & Routing
-- `get_interfaces`: Status, type, and traffic (Rx/Tx) for all interfaces.
-- `get_dhcp_leases_detailed`: View connected devices with hostnames and MACs.
+- `get_mikrotik_interfaces`: Status, type, and traffic (Rx/Tx) for all interfaces.
+- `get_mikrotik_ip_addresses`: List all IP addresses assigned to interfaces.
+- `get_mikrotik_dhcp_leases`: View connected devices with hostnames and MACs.
+- `get_mikrotik_routes`: View routing table and gateways.
+- `get_mikrotik_dns_settings`: View DNS configuration.
+- `get_mikrotik_arp_table`: View IP to MAC mapping.
+- `ping_mikrotik`: **Ping Test** from the router to any target (IP/Domain).
 
 ### 🛠️ System
-- `get_system_resources`: Board info, CPU load, uptime, and memory.
-- `get_system_logs`: Get recent system logs.
+- `get_mikrotik_resources`: Board info, CPU load, uptime, and memory.
+- `get_mikrotik_storage`: Check internal disk usage.
+- `get_mikrotik_logs`: Get recent system logs.
 
 ## Quick Start (NixOS)
 1. `cd mikrotik-mcpserver`

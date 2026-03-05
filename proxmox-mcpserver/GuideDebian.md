@@ -39,6 +39,13 @@ Isi sesuai dengan IP host Proxmox, User, dan Password Anda.
 
 ## Menjalankan Server
 
+### Fitur Baru untuk Debian/Proxmox
+Kini Anda dapat mengelola sistem Debian Proxmox langsung dari MCP:
+- **Cek Jaringan**: Gunakan `get_proxmox_node_networks` untuk melihat IP.
+- **Tes Koneksi**: Gunakan `check_proxmox_connectivity` untuk ping ke Google atau lokal.
+- **Update Repo**: Jalankan `update_proxmox_repositories` untuk `apt update`.
+- **Cek Paket**: Gunakan `list_proxmox_packages` untuk melihat daftar update yang tersedia.
+
 ### Mode 1: Untuk Claude Desktop (stdio)
 ```bash
 python3 server.py
